@@ -195,6 +195,181 @@ v2/
 └── README.md                   # This file
 ```
 
+## 🗺️ Architecture Diagrams
+
+### 1. Use Case Diagram
+```mermaid
+graph TB
+    User[User / Browser]
+    Extension[Browser Extension]
+    Backend[FastAPI Backend]
+    Model[ML Model]
+    
+    User -->|Install & Load| Extension
+    User -->|Visit URL| Extension
+    Extension -->|Scan Request| Backend
+    Backend -->|Feature Extraction & Predict| Model
+    Model -->|Risk Score + Explanation| Backend
+    Backend -->|Display Results| Extension
+    Extension -->|Show Risk Level| User
+    Backend -->|Cache Results| Cache[Cache]
+```
+
+### 2. Activity Diagram - URL Scanning Workflow
+```mermaid
+flowchart TD
+    A[User visits webpage] --> B{Extension active?}
+    B -->|No| C[Normal browsing]
+    B -->|Yes| D[Extract current URL]
+    D --> E[Check cache]
+    E -->|Hit| F[Display cached result]
+    E -->|Miss| G[SEND to Backend /v2/predict]
+    G --> H[Backend: URL + HTML feature extraction<br/>38 features]
+    H --> I[ML Model Prediction<br/>RandomForest/XGBoost champion]
+    I --> J[SHAP Explainability<br/>Top-K features]
+    J --> K[Risk Level + Score + Explanation]
+    K --> L[Cache result TTL=24h]
+    L --> M[Return to Extension]
+    M --> N[Popup: Color-coded risk<br/>Features list]
+    N --> O{Block?}
+    O -->|Phishing| P[Redirect to blocked.html]
+    O -->|Safe/Suspicious| Q[Continue browsing]
+```
+
+### 3. Sequence Diagram - Prediction Flow
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant E as Extension
+    participant B as Backend API
+    participant F as Features
+    participant M as ML Model
+    participant X as XAI Engine
+    participant C as Cache
+    
+    U->>E: Visit suspicious URL
+    E->>C: Check cache
+    C->>E: Miss
+    E->>B: POST /v2/predict {url, html}
+    B->>F: extract_features(url, html)
+    F->>M: predict(features)
+    M->>X: explain_prediction()
+    X->>B: risk_level, score, top_features
+    B->>C: Cache result
+    B->>E: JSON response
+    E->>U: Show popup with explanation
+```
+
+### 4. Class Diagram - Core Components
+```mermaid
+classDiagram
+    class URLFeatureExtractorV2 {
+        +transform_one(url, html_content) Vector~38~
+        +url_features_v1() Vector~19~
+        +advanced_features() Vector~19~
+    }
+    
+    class ExplainableAIEngine {
+        +explain_prediction(x, y_proba, url) Explanation
+        +shap_explain(model, features)
+        +feature_importance(model)
+    }
+    
+    class PhishGuardModel {
+        +predict(features) Float~risk_score~
+        +get_champion_model() String
+        +risk_level(score) String
+    }
+    
+    class FastAPIBackend {
+        +POST_/v2/predict(Request) Response
+        +cache_manager LRUCache
+    }
+    
+    URLFeatureExtractorV2 ..> PhishGuardModel
+    ExplainableAIEngine ..> PhishGuardModel
+    FastAPIBackend ..> URLFeatureExtractorV2
+    FastAPIBackend ..> ExplainableAIEngine
+```
+
+### 5. Component Diagram
+```mermaid
+graph TB
+    subgraph Browser["🖥️ Browser Environment"]
+        Extension[Browser Extension<br/>popup/content/background]
+    end
+    
+    subgraph Backend["🔧 Local Backend Server"]
+        API[FastAPI App v2<br/>port:8765]
+        Cache[LRU Cache<br/>1000 entries TTL=24h]
+        Features[Feature Extractors<br/>38 features]
+        Models[ML Models<br/>RF/SVM/LR/XGB]
+        XAI[XAI Engine<br/>SHAP + Importance]
+    end
+    
+    subgraph Data["💾 Data Layer"]
+        Dataset[PhiUSIIL Dataset<br/>1M URLs CSV]
+        TrainedModel[phishing_model_v2.pkl]
+        Eval[Evaluation Reports]
+    end
+    
+    Extension <--> API
+    API <--> Cache
+    API <--> Features
+    Features <--> Models
+    Models <--> XAI
+    Dataset --> TrainedModel
+    TrainedModel --> Models
+```
+
+### 6. Deployment Diagram
+```mermaid
+graph TD
+    subgraph Client["💻 Client Machine"]
+        Browser[Chrome/Edge Browser]
+        Extension[PhishGuard Extension]
+    end
+    
+    subgraph Server["🖥️ Local Development Server"]
+        Uvicorn[Uvicorn Server<br/>127.0.0.1:8765]
+        App[app_v2.py FastAPI]
+        Models["models/phishing_model_v2.pkl"]
+    end
+    
+    subgraph Data["📁 Project Files"]
+        Dataset["data/PhiUSIIL_Phishing_URL_Dataset.csv"]
+        Features["features/*.py"]
+    end
+    
+    Browser -.-> Extension
+    Extension <--> Uvicorn
+    Uvicorn <--> App
+    App <--> Models
+    App <--> Features
+    Dataset -.-> Models
+```
+
+### 7. Data Flow Diagram
+```mermaid
+graph LR
+    A[PhiUSIIL Phishing Dataset<br/>1M URLs CSV] --> B[ml/train_v2.py<br/>Model Training]
+    B --> C[phishing_model_v2.pkl<br/>Champion Model]
+    
+    D[User URL + HTML Content] --> E[Browser Extension]
+    E --> F[FastAPI Backend<br/>/v2/predict]
+    F --> G[Feature Extraction<br/>url_features_v2.py<br/>38 Features]
+    G --> C
+    C --> H[Prediction + Risk Score]
+    H --> I[Explainable AI<br/>Top-K Features]
+    I --> J[Cached JSON Response]
+    J --> E
+    E --> K[User Popup Display<br/>Risk Level + Explanation]
+    
+    style A fill:#e1f5fe
+    style C fill:#f3e5f5
+    style K fill:#e8f5e8
+```
+
 ---
 
 ## Installation & Setup (Detailed Guide)
@@ -258,8 +433,10 @@ python -c "import sklearn, xgboost, fastapi; print('All good!')"
 Dataset required: CSV with `url` + `label` columns.
 
 **Option A: Use provided PhiUSIIL dataset**
+**Source:** [PhiUSIIL Phishing URL Dataset on Kaggle](https://www.kaggle.com/datasets/ndarvind/phiusiil-phishing-url-dataset) (~1M rows)
+
 ```bash
-# Already in data/PhiUSIIL_Phishing_URL_Dataset.csv (~1M rows)
+# Already in data/PhiUSIIL_Phishing_URL_Dataset.csv
 ls -lh data/*.csv
 ```
 
