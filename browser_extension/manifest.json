@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "PhishGuard V2",
+  "version": "2.0.0",
+  "description": "Phishing detection extension with risk levels and explanations.",
+  "icons": {
+    "128": "logo.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "PhishGuard V2",
+    "default_icon": "logo.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs",
+    "clipboardWrite",
+    "scripting",
+    "webNavigation"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8765/*",
+    "http://127.0.0.56:8765/*",
+    "http://localhost:8765/*",
+    "<all_urls>"
+  ]
+}

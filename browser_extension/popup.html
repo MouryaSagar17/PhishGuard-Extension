@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhishGuard AI</title>
+  <link rel="stylesheet" href="styles_v2.css" />
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <header class="hero-card">
+      <div class="hero-row">
+        <div class="brand-lockup">
+          <span class="brand-mark">??</span>
+          <div>
+            <div class="brand-title">PhishGuard AI</div>
+            <div class="brand-subtitle">Real-time phishing protection</div>
+          </div>
+        </div>
+        <div id="statusBadge" class="status-badge">? Ready</div>
+      </div>
+
+      <div class="current-url">
+        <div class="section-label">Current URL</div>
+        <div id="currentUrl" class="current-url-value">Waiting for scan...</div>
+      </div>
+
+      <div class="real-time-strip">
+        <span class="real-time-dot"></span>
+        <span>Real-Time Protection: ON</span>
+      </div>
+    </header>
+
+    <section class="score-card hidden" id="resultCard">
+      <div class="score-head">
+        <div>
+          <div class="section-label">AI Risk Score</div>
+          <div id="resultTitle" class="score-title">Scan a page to see results</div>
+        </div>
+        <div id="resultIcon" class="score-icon">??</div>
+      </div>
+
+      <div class="score-meter-wrap">
+        <div class="score-meter">
+          <div id="confidenceBarFill" class="confidence-bar-fill"></div>
+        </div>
+        <div class="score-meta">
+          <span id="confidencePercent" class="confidence-percent">0%</span>
+          <span id="resultDetail" class="score-rank">Safe</span>
+        </div>
+      </div>
+
+      <div class="risk-scale">
+        <span class="risk-safe">0-40 Safe</span>
+        <span class="risk-suspicious">40-70 Suspicious</span>
+        <span class="risk-phishing">70-100 Phishing</span>
+      </div>
+
+      <div id="confidenceContainer" class="confidence-container hidden"></div>
+      <div id="error" class="error hidden"></div>
+    </section>
+
+    <section class="signals-card">
+      <div class="section-header">
+        <div>
+          <div class="section-label">Key Signals</div>
+          <h2>What influenced the decision</h2>
+        </div>
+      </div>
+      <div id="topFeaturesContainer" class="top-features-container hidden">
+        <div id="topFeaturesList"></div>
+      </div>
+      <div id="indicatorsContainer" class="indicators-container hidden">
+        <div id="indicatorsList"></div>
+      </div>
+      <div id="explanationContainer" class="explanation-container hidden">
+        <div class="explanation-label">AI Explanation</div>
+        <div id="explanationText" class="explanation-text"></div>
+      </div>
+    </section>
+
+    <section class="actions-card">
+      <div class="section-header">
+        <div>
+          <div class="section-label">Smart Actions</div>
+          <h2>Control the scan</h2>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button id="scanBtn" type="button" class="primary-btn">
+          <span id="scanBtnText">?? Scan Now</span>
+          <span id="scanSpinner" class="scan-spinner hidden"></span>
+        </button>
+        <button id="demoBtn" type="button" class="secondary-btn">? Demo</button>
+      </div>
+
+      <div class="toggle-grid">
+        <label class="toggle-item">
+          <input id="autoScan" type="checkbox" checked />
+          <span>
+            <strong>Auto Scan</strong>
+            <small>Scan pages automatically</small>
+          </span>
+        </label>
+        <label class="toggle-item">
+          <input id="blockPhishing" type="checkbox" checked />
+          <span>
+            <strong>Block Site</strong>
+            <small>Stop phishing pages automatically</small>
+          </span>
+        </label>
+        <label class="toggle-item">
+          <input id="demoMode" type="checkbox" />
+          <span>
+            <strong>Demo Mode</strong>
+            <small>Show sample predictions</small>
+          </span>
+        </label>
+      </div>
+
+      <div class="api-row">
+        <div class="section-label">API Base</div>
+        <input id="apiBase" type="text" placeholder="http://127.0.0.1:8765" />
+      </div>
+    </section>
+
+    <section class="history-card">
+      <div class="section-header">
+        <div>
+          <div class="section-label">Recent Activity</div>
+          <h2>Recent scans</h2>
+        </div>
+        <button id="clearHistoryBtn" type="button" class="text-btn">Clear</button>
+      </div>
+      <div id="historyList" class="history-list"></div>
+    </section>
+
+    <section class="footer-card">
+      <div class="footer-note">
+        <span class="footer-dot"></span>
+        Browser protection is active
+      </div>
+      <div id="debugInfo" class="debug-info hidden">
+        <pre id="debugText"></pre>
+      </div>
+    </section>
+  </div>
+
+  <script src="popup_v2.js"></script>
+</body>
+</html>
