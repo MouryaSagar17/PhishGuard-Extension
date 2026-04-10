@@ -390,7 +390,7 @@ pip --version
 ### 1. Clone & Setup Project Structure
 ```bash
 # Clone the repo (if not already)
-git clone <repo-url>
+git clone https://github.com/MouryaSagar17/PhishGuard-Extension.git
 cd "n:/Mourya/Projects/AI/Phishing website avoider V2"
 
 # Create project structure if needed
