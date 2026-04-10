@@ -583,16 +583,17 @@ async def batch_predict(req: BatchPredictRequest) -> BatchPredictResponse:
 @app.get("/v2/model/info")
 def model_info() -> ModelInfoResponse:
     """Get model metadata and training info."""
-    art = get_artifact()
-    training_metrics = art.get("training_metrics", {})
+    with open(ROOT / "evaluation" / "eval_report.json") as f:
+        eval_data = json.load(f)
     
     return ModelInfoResponse(
-        version=art.get("version", MODEL_VERSION),
-        champion_model=art.get("champion_name", "unknown"),
+        timestamp=eval_data["timestamp"],
+        version=eval_data["version"],
+        champion_model=eval_data["champion"],
         feature_count=len(FEATURE_NAMES),
         risk_thresholds=RISK_THRESHOLDS,
-        training_metrics=training_metrics,
-        training_date=art.get("timestamp", "unknown"),
+        training_metrics=eval_data["results"],
+        training_date=eval_data["timestamp"],
     )
 
 

@@ -433,7 +433,7 @@ python -c "import sklearn, xgboost, fastapi; print('All good!')"
 Dataset required: CSV with `url` + `label` columns.
 
 **Option A: Use provided PhiUSIIL dataset**
-**Source:** [PhiUSIIL Phishing URL Dataset on Kaggle](https://www.kaggle.com/datasets/ndarvind/phiusiil-phishing-url-dataset) (~1M rows)
+**Source:** [PhiUSIIL Phishing URL Dataset on Kaggle](https://www.kaggle.com/datasets/ndarvind/phiusiil-phishing-url-dataset) (~2M rows)
 
 ```bash
 # Already in data/PhiUSIIL_Phishing_URL_Dataset.csv
@@ -630,22 +630,18 @@ Get model metadata.
 **Response:**
 ```json
 {
+  "timestamp": "2026-04-07T08:57:14.976474",
   "version": "2.0.0",
-  "champion_model": "random_forest",
-  "feature_count": 38,
-  "risk_thresholds": {
-    "safe": 0.4,
-    "suspicious": 0.7,
-    "phishing": 1.0
-  },
-  "training_metrics": {
-    "random_forest": {
-      "accuracy": 0.95,
-      "f1_score": 0.93,
-      ...
+  "champion": "xgboost",
+  "results": {
+    "xgboost": {
+      "accuracy": 0.9951666666666666,
+      "precision": 0.9930815797059671,
+      "recall": 0.9985507246376811,
+      "f1": 0.9958086428674664,
+      "auc": 0.9984172776356918
     }
-  },
-  "training_date": "2024-01-01T10:00:00"
+  }
 }
 ```
 
@@ -876,6 +872,8 @@ curl http://127.0.0.1:8765/health
 
 ---
 
+
+
 ## License
 
 See LICENSE file in repository root.
@@ -900,3 +898,335 @@ See LICENSE file in repository root.
 - Binary classification
 - Browser extension
 - FastAPI backend
+
+---
+
+## 📄 Scopus Paper Publication Guide
+
+Got it. Since your implementation is already done, the difference between *rejection* and *acceptance* now comes down to **what you include in the paper and how clearly you prove it**.
+
+Below is a **reviewer-focused checklist**. These are the exact points that, if present and well-written, significantly increase your chances of Scopus acceptance.
+
+---
+
+# ✅ 1. Title & Abstract (first impression matters)
+
+### 🔹 Title should clearly include:
+
+* "Hybrid"
+* "Real-time"
+* "Browser Extension"
+* "Phishing Detection"
+
+👉 Example:
+
+> Hybrid AI-Based Real-Time Phishing Detection Using a Browser Extension
+
+---
+
+### 🔹 Abstract must include ALL 4:
+
+* Problem (phishing is increasing)
+* Gap (existing systems fail on zero-day attacks)
+* Your solution (hybrid + explainable + real-time)
+* Results (with numbers!)
+
+👉 If you don't include **accuracy numbers**, reviewers lose interest immediately.
+
+---
+
+# ✅ 2. Clear Problem Statement (don't be generic)
+
+Avoid:
+
+> Phishing is dangerous
+
+Instead write:
+
+* Why blacklist fails
+* Why ML alone is not enough
+* Why real-time detection is needed
+
+👉 Make the problem **specific and technical**
+
+---
+
+# ✅ 3. Strong Novelty (MOST IMPORTANT)
+
+You must explicitly list contributions.
+
+### Add a section:
+
+## "Key Contributions"
+
+Include points like:
+
+* Hybrid detection (heuristic + ML + API)
+* Real-time browser-based detection
+* Explainable phishing alerts
+* Lightweight architecture for low latency
+* Improved accuracy over standalone methods
+
+👉 If this section is weak → rejection
+
+---
+
+# ✅ 4. Literature Review (show you know existing work)
+
+Include comparison with:
+
+* Blacklist-based systems
+* ML-based phishing detection
+* Browser extensions
+
+👉 End this section with:
+
+> "Existing systems lack hybrid intelligence and real-time explainability"
+
+---
+
+# ✅ 5. System Architecture (visual clarity)
+
+You MUST include a diagram and explanation.
+
+Explain flow clearly:
+
+```plaintext
+User → Extension → Feature Extraction → ML Model → API Check → Decision Engine → Warning UI
+```
+
+👉 Without architecture diagram → looks incomplete
+
+---
+
+# ✅ 6. Methodology (technical depth)
+
+This section should include:
+
+---
+
+### 🔹 A. Feature Extraction
+
+List features like:
+
+* URL length
+* Number of dots
+* HTTPS presence
+* Suspicious keywords
+* Domain age
+
+---
+
+### 🔹 B. ML Model
+
+Clearly mention:
+
+* Algorithm used (Random Forest / XGBoost / etc.)
+* Why you chose it
+* Training process
+
+---
+
+### 🔹 C. Hybrid Decision Logic
+
+Explain how results are combined:
+
+Example:
+
+* If ML says phishing → block
+* Else check API
+* Combine results
+
+👉 This is your core innovation
+
+---
+
+# ✅ 7. Dataset (MANDATORY)
+
+You must include:
+
+* Dataset name (PhishTank / Kaggle)
+* Number of samples
+* Training/testing split
+
+👉 Missing dataset = instant rejection
+
+---
+
+# ✅ 8. Evaluation Metrics (VERY IMPORTANT)
+
+You must include:
+
+* Accuracy
+* Precision
+* Recall
+* F1-score
+
+Use formula (at least one):
+
+F1 = \frac{2 \cdot Precision \cdot Recall}{Precision + Recall}
+
+👉 Without metrics → not a research paper
+
+---
+
+# ✅ 9. Results Section (make it strong)
+
+Include:
+
+### 🔹 A. Numerical Results
+
+* Accuracy (must be shown)
+* Precision, Recall, F1
+
+---
+
+### 🔹 B. Comparison Table
+
+| Method          | Accuracy | Speed  |
+| --------------- | -------- | ------ |
+| Blacklist       | Low      | Fast   |
+| ML              | High     | Medium |
+| **Your Hybrid** | Best     | Fast   |
+
+---
+
+### 🔹 C. Graphs
+
+* Accuracy comparison
+* Detection time
+
+---
+
+### 🔹 D. Confusion Matrix
+
+Shows seriousness of evaluation
+
+---
+
+# ✅ 10. Explainability (BIG ADVANTAGE)
+
+Add a section:
+
+## "Explainable Detection"
+
+Show example:
+
+* Why a site is flagged
+
+👉 This is trending in research and boosts acceptance
+
+---
+
+# ✅ 11. Performance Analysis
+
+Include:
+
+* Detection time
+* API latency
+* Effect of caching
+
+👉 Shows engineering maturity
+
+---
+
+# ✅ 12. Real-Time Implementation
+
+Explain:
+
+* How extension works in browser
+* How fast detection happens
+
+👉 This is your practical contribution
+
+---
+
+# ✅ 13. Limitations (reviewers like honesty)
+
+Write 3–4 points:
+
+* Depends on dataset quality
+* API rate limits
+* May produce false positives
+
+👉 Adds credibility
+
+---
+
+# ✅ 14. Future Work
+
+Include advanced ideas:
+
+* Deep learning models
+* Federated learning
+* User feedback loop
+* NLP-based phishing detection
+
+---
+
+# ✅ 15. Proper References
+
+Cite:
+
+* Recent papers (last 3–5 years)
+* ML-based phishing detection
+* Browser security systems
+
+👉 Minimum: 10–15 references
+
+---
+
+# 🔥 BONUS (HIGH IMPACT ADDITIONS)
+
+If you include these, acceptance probability increases a lot:
+
+---
+
+### ✅ 1. Algorithm (pseudo code)
+
+Shows clarity
+
+---
+
+### ✅ 2. Complexity Analysis
+
+Even small discussion helps
+
+---
+
+### ✅ 3. Screenshots
+
+* Extension UI
+* Warning message
+
+---
+
+### ✅ 4. Deployment Details
+
+* Chrome extension
+* Real-world testing
+
+---
+
+# ⚠️ FINAL TRUTH (IMPORTANT)
+
+Even if your project is good, paper gets rejected if:
+
+❌ No metrics
+❌ No comparison
+❌ No clear contribution
+❌ Weak writing
+
+---
+
+# 🚀 SIMPLE ACCEPTANCE FORMULA
+
+If your paper has:
+
+✔ Clear contribution
+✔ Hybrid model
+✔ Dataset + metrics
+✔ Comparison table
+✔ Strong results (with numbers)
+✔ Clean structure
+
