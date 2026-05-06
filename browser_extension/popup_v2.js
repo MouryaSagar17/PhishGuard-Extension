@@ -165,6 +165,36 @@ function getRiskLevelInfo(riskLevel, riskScore) {
   return riskLevels[riskLevel] || riskLevels.suspicious;
 }
 
+function clamp01(value) {
+  return Math.max(0, Math.min(1, Number(value) || 0));
+}
+
+function deriveRiskScorePercent(riskScore, topFeatures) {
+  const baseScore = clamp01(riskScore);
+  if (!topFeatures || topFeatures.length === 0) {
+    return Math.round(baseScore * 100);
+  }
+
+  let positiveRisk = 0;
+  let negativeRisk = 0;
+
+  topFeatures.forEach(feature => {
+    const magnitude = clamp01(feature?.contribution_magnitude);
+    if (magnitude <= 0) {
+      return;
+    }
+
+    if ((feature?.contribution_direction || "").toLowerCase() === "positive") {
+      positiveRisk = 1 - ((1 - positiveRisk) * (1 - magnitude));
+    } else {
+      negativeRisk = 1 - ((1 - negativeRisk) * (1 - magnitude));
+    }
+  });
+
+  const signalScore = positiveRisk * (1 - negativeRisk * 0.35);
+  return Math.round(Math.max(baseScore, signalScore) * 100);
+}
+
 // ========== Feature Explanations ==========
 
 function displayTopFeatures(topFeatures) {
@@ -237,7 +267,7 @@ function showResult(riskLevel, riskScore, confidence, explanation, topFeatures, 
   updateStatus(riskLevel === "safe" ? "Safe" : riskLevel === "suspicious" ? "Suspicious" : "Phishing");
   
   // Risk score display - show phishing probability (0-40 Safe, 40-70 Suspicious, 70-100 Phishing)
-  const riskScorePercent = Math.round(riskScore * 100);
+  const riskScorePercent = deriveRiskScorePercent(riskScore, topFeatures);
   
   if (confidenceContainer) {
     confidenceContainer.classList.remove("hidden");

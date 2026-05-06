@@ -221,6 +221,38 @@ def _probability_to_risk_level(prob: float) -> dict[str, Any]:
         return {"level": "phishing", "description": "Phishing", "emoji": "🔴"}
 
 
+def _clamp_probability(value: float) -> float:
+    return max(0.0, min(1.0, float(value)))
+
+
+def _blend_signal_risk_score(model_prob: float, top_features: list[Any]) -> float:
+    """
+    Blend the raw model probability with the strongest positive feature signals.
+
+    This keeps the model as the baseline, but allows obvious phishing indicators
+    such as DNS failure or suspicious redirects to raise the displayed score.
+    """
+    base_score = _clamp_probability(model_prob)
+    if not top_features:
+        return base_score
+
+    positive_risk = 0.0
+    negative_risk = 0.0
+
+    for feature in top_features:
+        magnitude = _clamp_probability(getattr(feature, "contribution_magnitude", 0.0))
+        if magnitude <= 0:
+            continue
+
+        if getattr(feature, "contribution_direction", "").lower() == "positive":
+            positive_risk = 1.0 - ((1.0 - positive_risk) * (1.0 - magnitude))
+        else:
+            negative_risk = 1.0 - ((1.0 - negative_risk) * (1.0 - magnitude))
+
+    signal_score = positive_risk * (1.0 - (negative_risk * 0.35))
+    return _clamp_probability(max(base_score, signal_score))
+
+
 def _is_high_risk_domain(domain: str) -> bool:
     """Return True for domains that match known high-risk brand markers."""
     domain = (domain or "").lower()
@@ -506,18 +538,20 @@ async def predict(req: PredictRequest) -> PredictResponse:
             top_features = []
             explanation_text = "Safe" if y_pred == 0 else "Phishing detected"
         
-        # Risk level
-        risk_info = _probability_to_risk_level(y_proba)
+        # Blend model probability with signal strength from the explanation.
+        # This ensures strong indicators like DNS failures are reflected in the score.
+        risk_score = _blend_signal_risk_score(y_proba, top_features)
+        risk_info = _probability_to_risk_level(risk_score)
         
         # Confidence: higher at extremes (very safe or very phishing), lower in middle (uncertain)
         # At 0.0 or 1.0 (extremes): confidence = min(2.0, max_val) = 1.0
         # At 0.5 (middle): confidence = 0.0, but we set minimum 0.75 to show some confidence always
-        confidence = max(abs(y_proba - 0.5) * 2, 0.75)  # Clamp between 0.75 and 1.0
+        confidence = max(abs(risk_score - 0.5) * 2, 0.75)  # Clamp between 0.75 and 1.0
         
         result = {
             "url": url,
             "risk_level": risk_info["level"],
-            "risk_score": y_proba,
+            "risk_score": risk_score,
             "confidence": confidence,
             "label": "phishing" if y_pred == 1 else "safe",
             "explanation": explanation_text,

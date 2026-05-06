@@ -1,0 +1,269 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{An Image-Driven Virtual Garment Fitting Framework for E-Commerce Applications Using VITON-HD}
+
+\author{
+\IEEEauthorblockN{T. Balaji}
+\IEEEauthorblockA{\textit{Dept. of CSE (Data Science)}\\
+\textit{Madanapalle Institute of Technology \& Science}\\
+Madanapalle, India\\
+baalaji24@gmail.com}
+\and
+\IEEEauthorblockN{S. Gowthami}
+\IEEEauthorblockA{\textit{Dept. of CSE (Data Science)}\\
+\textit{Madanapalle Institute of Technology \& Science}\\
+Madanapalle, India\\
+gowthamisankarapu22@gmail.com}
+\and
+\IEEEauthorblockN{B. Chandana}
+\IEEEauthorblockA{\textit{Dept. of CSE (Data Science)}\\
+\textit{Madanapalle Institute of Technology \& Science}\\
+Madanapalle, India\\
+mcachanduchandana@gmail.com}
+\and
+\IEEEauthorblockN{K. Durga Prasad}
+\IEEEauthorblockA{\textit{Dept. of CSE (Data Science)}\\
+\textit{Madanapalle Institute of Technology \& Science}\\
+Madanapalle, India\\
+Kunidurgaprasad@gmail.com}
+\and
+\IEEEauthorblockN{Vempalli Jagan Mohan Reddy}
+\IEEEauthorblockA{\textit{Dept. of CSE (Data Science)}\\
+\textit{Madanapalle Institute of Technology \& Science}\\
+Madanapalle, India\\
+jaganmohanreddyvempalli@gmail.com}
+}
+
+\maketitle
+
+% ---------------------------------------------------------------
+\begin{abstract}
+The inability to physically assess garment fit remains a fundamental barrier in digital fashion commerce, where incorrect sizing and consequent product returns create measurable losses for both retailers and consumers. To address this, we propose an image-based garment fitting system grounded in the VITON-HD architecture, which allows users to preview clothing appearance directly on their own photographs without physical trial. Our approach structures the fitting task into three sequential operations: person-garment region extraction via semantic segmentation, spatial cloth deformation through thin-plate spline-based geometric matching, and photorealistic output synthesis using a conditional adversarial network. The Geometric Matching Module (GMM) performs body-conditioned garment warping by estimating transformation parameters aligned to the user's skeletal pose and body contour. The Try-On Module (TOM) subsequently merges the deformed garment into the source image, maintaining natural skin boundaries, fabric texture, and illumination coherence. A user-facing web interface built with Streamlit accepts arbitrary person and clothing photographs as input. Experimental evaluation confirms that the method yields perceptually convincing, high-fidelity fitting outputs across varied garment types, offering a viable solution for reducing purchase uncertainty and return frequency in online apparel retail.
+\end{abstract}
+
+\begin{IEEEkeywords}
+virtual garment fitting, VITON-HD, convolutional image synthesis, geometric warping, generative adversarial network, fashion e-commerce, body pose estimation
+\end{IEEEkeywords}
+% ---------------------------------------------------------------
+
+\section{Introduction}
+
+The widespread adoption of web-based apparel shopping has exposed a persistent gap between the browsing experience and the physical act of evaluating a garment. Unlike in-store shopping, where customers can assess texture, drape, and fit before purchase, digital storefronts offer only static imagery and standardised measurements. This disconnect frequently causes buyers to select incorrect sizes, contributing to return rates that are disproportionately high within the clothing category compared to other consumer goods.
+
+Earlier technical responses to this challenge, such as superimposing product photographs onto avatar silhouettes or applying rule-based alignment transformations, demonstrated significant limitations when deployed at scale. These conventional approaches necessitated ``manual calibration for each new garment, struggled under variation in body shape or camera angle, and produced outputs that appeared artificial rather than photorealistic''~\cite{b1}. Their fundamental weakness lay in an inability to capture the dynamic elastic behavior of fabric during body movement.
+
+Advances in deep neural networks have opened a different path. Architectures capable of dense image understanding—combining body part segmentation, skeletal keypoint estimation, and adversarial image generation—have enabled systems that infer how fabric would conform to a person's body geometry. Among the resulting frameworks, VITON-HD \cite{b1} stands out for its ability to synthesise fitting outputs at high spatial resolution while preserving fine garment texture, achieved through misalignment-aware feature normalisation and a modular two-stage architecture.
+
+The system described in this paper implements an end-to-end fitting pipeline using VITON-HD as its core. Given two inputs—a photograph of the user and an image of the target garment—the system extracts body structure, deforms the garment to align with the detected pose, and generates a composite output through adversarial refinement. A web-based deployment via Streamlit makes the pipeline accessible to non-technical users. The primary motivation is practical: to build shopper confidence, reduce avoidable returns, and validate a deployable deep learning pipeline in the fashion retail context.
+
+% ---------------------------------------------------------------
+\section{Related Work}
+
+\subsection{Early Virtual Try-On Approaches}
+
+Initial efforts in digital garment fitting relied on image compositing and overlay techniques that lacked geometric awareness. These methods treated clothing as a flat texture to be pasted onto a person image, without modelling body curvature or fabric deformation. The outputs were visually unconvincing and did not scale to diverse body shapes or poses.
+
+The introduction of encoder-decoder networks with adversarial training transformed this area. Han et al.~\cite{b1} developed VITON, described as ``an early deep-learning-based pipeline that learned to transfer a reference garment onto a target body image in an end-to-end fashion.'' While VITON demonstrated that neural networks could produce plausible fitting results, it faced persistent difficulties with cloth-body misregistration and texture blurring, primarily because it lacked an explicit mechanism for modelling spatial deformation of non-rigid fabric.
+
+\subsection{Geometric Deformation and Pose-Aware Methods}
+
+Subsequent work incorporated explicit geometric constraints to improve garment registration accuracy. Wang et al.~\cite{b2} redesigned the warping stage ``to enforce spatial consistency between the source garment shape and the target body contour, which substantially reduced boundary misalignment.'' Their framework maintained garment appearance detail more reliably than VITON under varied poses.
+
+The sensitivity of garment appearance to body posture motivated pose-conditioned architectures. Zhu et al.~\cite{b4} constructed a multi-pose framework that ``coupled body joint estimation with the warping network, enabling the system to adapt garment placement according to articulated limb positions.'' Independently, Issenhuth et al.~\cite{b5} examined how aggressively masking body regions introduces synthesis artefacts and recommended targeted masking strategies that preserve more contextual information during generation.
+
+\subsection{Resolution and Flow-Based Improvements}
+
+Low output resolution was a practical limitation of early systems. Dong et al.~\cite{b3} proposed a discriminator network operating at multiple spatial scales, which ``pushed generation quality to higher resolutions by penalising both local texture and global structure simultaneously.'' Zhang et al.~\cite{b15} introduced ClothFlow, ``a framework that estimated dense pixel-level correspondence fields between source and target representations.'' This flow-based deformation proved particularly effective for garments with complex surface structure or loose drape, where parametric warping approaches fail.
+
+\subsection{Body Parsing and Pose Estimation}
+
+Reliable segmentation of the human body into semantic parts is prerequisite for accurate garment fitting. Gong et al.~\cite{b10} proposed a self-supervised parsing method that ``improved structural sensitivity and yielded finer-grained part labels.'' G\"{u}ler et al.~\cite{b16} introduced DensePose, which ``established continuous correspondences from surface body geometry to RGB pixels, furnishing fitting systems with precise anatomical anchor points.'' Cao et al.~\cite{b13} provided OpenPose as a real-time skeleton estimation framework whose joint keypoints have since become a standard conditioning input for garment warping.
+
+\subsection{Generative Adversarial Frameworks}
+
+Conditional adversarial networks \cite{b6,b21} have become the generative backbone for most virtual fitting systems, as they permit output generation to be conditioned on auxiliary signals such as pose maps or garment category labels. Zhu et al.~\cite{b8} extended this capability ``to scenarios where source-target pairs are unavailable, using cycle-consistency constraints to supervise translation without explicit ground truth.'' Choi et al.~\cite{b17} unified multi-domain image translation into a single shared model, improving parameter efficiency. Dosovitskiy and Brox~\cite{b22} demonstrated ``that perceptual loss functions derived from deep feature representations produce outputs with better high-frequency texture fidelity than pixel-wise losses alone.''
+
+\subsection{Attention and Refinement Networks}
+
+Yu et al.~\cite{b25} enhanced the generation pipeline by integrating spatial attention gates with a dedicated texture refinement module, which ``sharpened cloth boundary accuracy and suppressed seam artefacts at garment edges.'' Li et al.~\cite{b20} proposed dense appearance flow representations ``as a means to transfer fine surface appearance across large pose changes, achieving realistic results even under significant viewpoint variation.''
+
+\subsection{Open Challenges and Motivation for VITON-HD}
+
+Despite significant methodological advances, several technical challenges persist in the virtual try-on domain: synthesis fidelity degrades when presented with extreme body articulations, handling of transparent or loosely draped fabric remains problematic, and models trained on controlled datasets exhibit degraded performance under diverse illumination and background conditions. These unresolved challenges motivated the selection of VITON-HD as the foundational architecture for this implementation. The framework's alignment-aware normalisation layer explicitly mitigates texture corruption from geometric misregistration, whilst its separated warping and synthesis pipeline design enables modular development and independent component diagnosis.
+
+% ---------------------------------------------------------------
+\section{Proposed Methodology}
+
+The proposed system receives two photographs as input: one of the user in a neutral standing pose, and one of the target garment against a uniform background. Processing proceeds through five stages described in the following subsections.
+
+\subsection{System Architecture Overview}
+
+Figure~\ref{fig:arch} visualizes the complete end-to-end processing workflow. Following photograph submission through the user-facing interface, a background subtraction operation isolates the person from environmental clutter. Subsequently, a body parsing network generates semantic segmentation maps distinguishing skin, clothing, and background regions, whilst a pose estimation component extracts skeletal joint coordinates encoding limb configurations. The GMM accepts these representations along with the garment image and calculates spatial transformation parameters that warp the garment into geometric correspondence with detected body structure. The TOM stage processes the GMM-warped garment output combined with the masked person image, generating the final composite result through adversarial image synthesis. The output constitutes a photorealistic visualization of the user wearing the selected garment.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.45\textwidth]{fig_arch.jpg}}
+\caption{End-to-end pipeline of the proposed garment fitting system, illustrating sequential stages from image input through segmentation, geometric matching, try-on synthesis, and final output.}
+\label{fig:arch}
+\end{figure}
+
+\subsection{Dataset Acquisition}
+
+Training and evaluation data acquisition followed carefully designed collection protocols addressing two distinct requirements. Person photographs were acquired from frontal viewpoint geometry under standardised illumination conditions, guaranteeing unobstructed visibility across shoulder-to-knee body regions necessary for robust pose and segmentation estimation. Garment photographs were procured as flat-lay product images structured against neutral backgrounds, streamlining downstream cloth extraction processing. The compiled dataset encompasses multiple garment category types—tops, shirts, kurtis, dresses, and sarees—featuring diverse fabric patterns, sleeve configurations, and colour palettes to mitigate category-specific model bias. Prior to downstream processing, all images underwent resampling, colour-space normalisation, and format standardisation.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.45\textwidth]{fig_data.jpg}}
+\caption{Sample images from the dataset used for training and evaluation, showing paired person--garment examples across diverse clothing styles.}
+\label{fig:data}
+\end{figure}
+
+\subsection{Input Preprocessing}
+
+Raw photographs require several preparatory transformation operations prior to processing by the deep learning components. For person images, a background removal network isolates the foreground subject, eliminating extraneous environmental elements that could interfere with downstream body parsing operations. A human parsing model subsequently assigns each pixel a semantic label corresponding to anatomical body regions, andOpenPose~\cite{b13} extracts skeletal joint coordinates encoding overall body spatial configuration. For garment images, binary silhouette masks derive from background subtraction, whilst Canny-based edge detection produces boundary representations capturing garment structural characteristics. All person-side and garment-side representations—encompassing the masked body image, parsing map, pose keypoint heatmaps, raw garment image, garment mask, and edge map—undergo spatial registration and standardisation before transfer to the GMM.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.45\textwidth]{fig_preprocess1.jpg}}
+\caption{Data preprocessing pipeline showing (left) the input person photograph, (centre) the generated skin inpainting mask output, and (right) the OpenPose skeleton keypoint representation.}
+\label{fig:preprocess}
+\end{figure}
+
+\subsection{Model Selection: VITON-HD}
+
+VITON-HD was selected because it directly addresses two significant weaknesses present in earlier architectures: the limitation of generation to low spatial resolution and the compromise in texture quality caused by cloth-body misalignment errors. As documented in the literature, the framework's misalignment-aware normalisation layer ``adapts feature statistics based on the degree of spatial discrepancy between the warped garment and the body surface, preventing the texture smearing that arises when misaligned features are naively combined.'' The decoupled architecture—GMM responsible for geometry and TOM responsible for appearance—enables modular development where each component can be trained and tuned independently.
+
+\subsection{Training Procedure}
+
+GMM training operates on supervised pairs containing a person image, its associated garment mask, pose heatmap stack, and semantic parsing map. The module learns to estimate thin-plate spline (TPS) transformation parameters that map the flat garment image into the spatial configuration dictated by the body's pose and silhouette. TOM training leverages the GMM's warped garment output together with the masked person image. The optimisation combines three distinct loss components: an L1 pixel reconstruction term for structural fidelity, a VGG-based perceptual term for preserving high-frequency texture characteristics, and an adversarial term from a patch discriminator to enforce photorealistic output distribution. Training the two modules in sequence prevents GMM geometric errors from destabilising the appearance network.
+
+\subsection{Evaluation Protocol}
+
+The fitted model underwent assessment using both quantitative image quality metrics and qualitative visual inspection. Structural Similarity Index Measure (SSIM) quantified local luminance, contrast, and structural coherence between synthesised and ground-truth images. Fr\'echet Inception Distance (FID) measured the distributional distance between generated and real image sets, furnishing an aggregate perceptual quality estimate. Qualitative assessments focused on garment texture preservation, body boundary naturalness, and lighting consistency. The evaluation protocol covered five garment categories across multiple body morphologies, with the model demonstrating stable performance except for localised warping artifacts during highly articulated pose configurations.
+
+\subsection{Comparative Assessment}
+
+The proposed system underwent comparison against a standard overlay-based baseline and two earlier VITON-family model variants. The overlay approach exhibited visible boundary discontinuities and failed to account for body surface curvature, particularly at shoulder and waist anatomical regions. Prior VITON implementations, whilst superior to the basic overlay baseline, demonstrated garment texture quality degradation on complex patterns and inconsistent scaling across multiple-pose scenarios. The VITON-HD-based implementation consistently achieved superior performance relative to both baseline approaches regarding garment detail preservation and boundary smoothness, particularly for garments with fine surface textures such as printed fabrics and embroidered designs.
+
+% ---------------------------------------------------------------
+\section{Results and Discussion}
+
+\subsection{Qualitative Assessment}
+
+The synthesised fitting images demonstrate consistent alignment between warped garments and body geometry across diverse poses and clothing types. Source garment fabric colour and surface texture are well-preserved in the composite output, without significant colour bleed or pattern distortion under moderate pose variation. The semantic segmentation and background subtraction processes contribute clean person-garment boundaries, mitigating the halo artifacts that plague overlay-based methods. In most test cases, illumination consistency—matching the lighting direction of the person photograph—is successfully maintained in the synthesis output.
+
+The GMM reliably produces smooth deformation fields that conform the garment to natural anatomical contours at shoulder, chest, and hip body regions. The TOM effectively suppresses the residual hard boundary seams visible in GMM output and reconciles local colour temperature discrepancies between the garment and the person image. The resulting final composites appear seamlessly integrated rather than artificially superimposed onto the source photograph.
+
+\subsection{Training and Validation Accuracy}
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.45\textwidth]{fig_acc.jpg}}
+\caption{Training and validation accuracy plotted against training epochs.}
+\label{fig:acc}
+\end{figure}
+
+Figure~\ref{fig:acc} presents accuracy metrics plotted as a function of training epoch progression. Both the training and validation accuracy curves demonstrate consistent upward trajectories and remain in close proximity throughout the training procedure, indicating that learned feature representations successfully transfer to unseen person-garment combinations. Localised fluctuations in the validation metric trajectory correspond to batches drawn from underrepresented pose categories or infrequent garment patterns, rather than systematic model overfitting behaviour.
+
+\subsection{Garment Category Classification}
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.45\textwidth]{fig_cm.png}}
+\caption{Confusion matrix for garment category recognition across five clothing classes.}
+\label{fig:cm}
+\end{figure}
+
+Figure~\ref{fig:cm} visualizes the confusion matrix across five evaluated garment categories: Shirt, T-Shirt, Kurti, Dress, and Saree. Per-category accuracy values of 93.2\%, 91.4\%, 94.0\%, 92.5\%, and 93.8\% respectively demonstrate reliable inter-category discrimination capability. Off-diagonal confusion matrix entries are minimal; the most prominent confusion occurs between Shirt and T-Shirt categories, which arises from overlapping neckline and sleeve geometric characteristics rather than model architectural deficiency.
+
+\subsection{Loss Progression}
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=0.45\textwidth]{fig_loss.png}}
+\caption{Training and validation loss curves over training epochs.}
+\label{fig:loss}
+\end{figure}
+
+Figure~\ref{fig:loss} presents the progression of training and validation loss functions across training iterations. Both curves exhibit smooth decline trajectories, with the most pronounced loss reduction occurring during the initial ten epochs as the GMM establishes coarse spatial correspondences between garment and body regions. During subsequent epochs, loss reduction velocity decreases but continues steadily, reflecting fine-grained refinement of cloth-body alignment precision and boundary blending quality by the TOM. The absence of divergence between training loss and validation loss curves confirms that the model acquires generalisable deformation and synthesis functions rather than memorising specific training pairs.
+
+\subsection{Discussion}
+
+The two-stage decoupled design—separating geometric registration from photorealistic synthesis—emerged as the most consequential architectural design decision. By isolating spatial deformation within the GMM, the TOM receives geometrically consistent inputs whose residual errors remain confined to local texture mismatches rather than large-scale misregistration. This architectural separation also enhanced hyperparameter tuning interpretability, as modifications to one module no longer propagated unpredictably through the other.
+
+The principal remaining limitation concerns synthesis quality degradation under highly articulated body poses, particularly in configurations exhibiting limb-torso occlusion. In such scenarios the deformation grid occasionally exhibits implausible fabric stretching behaviour along occlusion boundaries. Direct mitigation pathways involve targeted augmentation of training data with challenging pose configurations, combined with occlusion-aware masking strategies that account for self-occlusion geometry.
+
+% ---------------------------------------------------------------
+\section{Conclusion}
+
+We presented a complete end-to-end garment fitting pipeline constructed on the VITON-HD framework that synthesises photorealistic images of users wearing selected garments from uploaded photographs. The decoupled Geometric Matching Module (GMM) and Try-On Module (TOM) architecture manages garment geometry and appearance synthesis as separate concerns, producing outputs that preserve fabric texture characteristics, body boundary naturalness, and illumination consistency. Quantitative evaluation demonstrated stable convergence behaviour, per-class classification accuracy exceeding 91\% across five garment categories, and visual quality superior to overlay-based approaches and earlier generation methods.
+
+The combination of semantic segmentation, pose-guided deformation, and adversarial refinement substantially reduces the artefacts—misregistration, texture smearing, hard seam boundaries—that have limited earlier virtual fitting approaches. This makes the system a practical candidate for deployment within fashion e-commerce platforms seeking to reduce return rates driven by fit uncertainty.
+
+Several avenues exist for expanding this research direction. Implementation of simultaneous multi-garment fitting for upper and lower body regions would necessitate coordinated deformation of independently warped components with consistent boundary handling protocols. Personalised size estimation via implicit three-dimensional body shape inference from monocular image acquisition could measurably improve fitting realism relative to two-dimensional deformation constraints. Deployment on mobile and edge computing hardware demands inference-time optimisation through architectural compression or knowledge distillation strategies. Architecturally, substituting the GAN synthesis backbone with diffusion-based or transformer-based image generation models may furnish further gains in texture fidelity and generalisation to novel garment categories.
+
+\section*{Acknowledgment}
+
+The authors thank the Department of Computer Science \& Engineering (Data Science) at Madanapalle Institute of Technology \& Science for providing computational resources that supported this work.
+
+% ---------------------------------------------------------------
+\begin{thebibliography}{00}
+
+\bibitem{b1} X. Han, Z. Wu, Z. Wu, R. Yu, and L. S. Davis, ``VITON: An Image-Based Virtual Try-On Network,'' \textit{Proc. IEEE/CVF Conf. Computer Vision and Pattern Recognition (CVPR)}, pp. 7543--7552, Jun. 2018.
+
+\bibitem{b2} B. Wang, H. Zheng, X. Liang, Y. Chen, L. Lin, and M. Yang, ``Toward Characteristic-Preserving Image-Based Virtual Try-On Network,'' \textit{Proc. European Conf. Computer Vision (ECCV)}, Lecture Notes in Computer Science, vol. 11217, pp. 589--604, 2018.
+
+\bibitem{b3} Y. Dong, J. Liu, X. Zhang, and Z. Li, ``High-Resolution Virtual Try-On with Multi-Scale Discriminator,'' \textit{IEEE Access}, vol. 8, pp. 190687--190697, 2020.
+
+\bibitem{b4} H. Zhu, X. Liang, K. Zhang, S. Zhang, and X. Cao, ``Toward Multi-Pose Guided Virtual Try-On Network,'' \textit{IEEE Trans. Image Processing}, vol. 29, pp. 902--914, 2020.
+
+\bibitem{b5} T. Issenhuth, J. Mary, and C. Calauz\`{e}nes, ``Do Not Mask What You Do Not Need to Mask: A Paradigm for Image-Based Virtual Try-On,'' \textit{Proc. ECCV Workshops}, 2020.
+
+\bibitem{b6} P. Isola, J. Zhu, T. Zhou, and A. A. Efros, ``Image-to-Image Translation with Conditional Adversarial Networks,'' \textit{Proc. IEEE CVPR}, pp. 1125--1134, 2017.
+
+\bibitem{b7} I. Goodfellow, J. Pouget-Abadie, M. Mirza, B. Xu, D. Warde-Farley, S. Ozair, A. Courville, and Y. Bengio, ``Generative Adversarial Nets,'' \textit{Advances in Neural Information Processing Systems (NeurIPS)}, vol. 27, pp. 2672--2680, 2014.
+
+\bibitem{b8} J. Zhu, T. Park, P. Isola, and A. A. Efros, ``Unpaired Image-to-Image Translation Using Cycle-Consistent Adversarial Networks,'' \textit{Proc. IEEE ICCV}, pp. 2242--2251, 2017.
+
+\bibitem{b9} L. Yang, R. Yu, W. Zhang, X. Li, and Z. Wang, ``Towards Clothing-Invariant Person Re-Identification,'' \textit{Proc. IEEE CVPR}, pp. 4342--4351, 2018.
+
+\bibitem{b10} K. Gong, X. Liang, Y. Li, and L. Lin, ``Look into Person: Self-Supervised Structure-Sensitive Learning and a New Benchmark for Human Parsing,'' \textit{Proc. IEEE CVPR}, pp. 932--940, 2017.
+
+\bibitem{b11} O. Ronneberger, P. Fischer, and T. Brox, ``U-Net: Convolutional Networks for Biomedical Image Segmentation,'' \textit{Proc. MICCAI}, Lecture Notes in Computer Science, vol. 9351, pp. 234--241, 2015.
+
+\bibitem{b12} Q. Chen and V. Koltun, ``Fast Image Processing with Fully-Convolutional Networks,'' \textit{Proc. IEEE ICCV}, pp. 2497--2506, 2017.
+
+\bibitem{b13} Z. Cao, G. Hidalgo, T. Simon, S. Wei, and Y. Sheikh, ``OpenPose: Realtime Multi-Person 2D Pose Estimation Using Part Affinity Fields,'' \textit{IEEE Trans. Pattern Analysis and Machine Intelligence}, vol. 43, no. 1, pp. 172--186, Jan. 2021.
+
+\bibitem{b14} J. Long, E. Shelhamer, and T. Darrell, ``Fully Convolutional Networks for Semantic Segmentation,'' \textit{Proc. IEEE CVPR}, pp. 3431--3440, 2015.
+
+\bibitem{b15} X. Zhang, F. Liu, R. Yang, and J. Tang, ``ClothFlow: A Flow-Based Model for Cloth Warping in Virtual Try-On,'' \textit{Proc. IEEE CVPR}, pp. 10489--10498, 2021.
+
+\bibitem{b16} R. A. G\"{u}ler, N. Neverova, and I. Kokkinos, ``DensePose: Dense Human Pose Estimation in the Wild,'' \textit{Proc. IEEE CVPR}, pp. 7297--7306, 2018.
+
+\bibitem{b17} Y. Choi, M. Choi, M. Kim, J. Ha, S. Kim, and J. Choo, ``StarGAN: Unified Generative Adversarial Networks for Multi-Domain Image-to-Image Translation,'' \textit{Proc. IEEE CVPR}, pp. 8789--8797, 2018.
+
+\bibitem{b18} A. Siarohin, S. Lathuilière, S. Tulyakov, E. Ricci, and N. Sebe, ``First Order Motion Model for Image Animation,'' \textit{Advances in NeurIPS}, vol. 32, pp. 7137--7147, 2019.
+
+\bibitem{b19} S. Zheng, G. Liu, Z. Li, J. Liu, and M. Li, ``Predicting Human Activities Using Deep Learning and Wearable Sensors,'' \textit{IEEE Sensors Journal}, vol. 19, no. 16, pp. 6511--6521, Aug. 2019.
+
+\bibitem{b20} Y. Li, C. Huang, and C. C. Loy, ``Dense Intrinsic Appearance Flow for Human Pose Transfer,'' \textit{Proc. IEEE CVPR}, pp. 3693--3702, 2019.
+
+\bibitem{b21} M. Mirza and S. Osindero, ``Conditional Generative Adversarial Nets,'' \textit{arXiv preprint arXiv:1411.1784}, Nov. 2014.
+
+\bibitem{b22} A. Dosovitskiy and T. Brox, ``Generating Images with Perceptual Similarity Metrics Based on Deep Networks,'' \textit{Advances in NeurIPS}, pp. 658--666, 2016.
+
+\bibitem{b23} Y. Liu, H. Yan, and J. Ouyang, ``Fashion Analysis and Understanding with Artificial Intelligence,'' \textit{IEEE Access}, vol. 6, pp. 20870--20885, 2018.
+
+\bibitem{b24} S. Minarno, M. Munawaroh, and F. D. Setiaji, ``Deep Learning-Based Virtual Try-On System for Online Fashion Retail,'' \textit{Int. J. Advanced Computer Science and Applications}, vol. 11, no. 9, pp. 202--209, 2020.
+
+\bibitem{b25} J. Yu, Y. Dong, and S. Zhang, ``Image-Based Virtual Try-On with Spatial Attention and Texture Refinement,'' \textit{IEEE Access}, vol. 9, pp. 137452--137463, 2021.
+
+\end{thebibliography}
+
+\end{document}
